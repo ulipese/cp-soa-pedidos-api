@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: API de Pedidos
+  version: 1.0.0
+  description: >
+    API para criar e consultar pedidos de um e-commerce (CP5 - SOA).
+    Toda resposta devolve o header X-Request-ID, que é o mesmo id que aparece nos logs.
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /pedidos:
+    post:
+      tags: [Pedidos]
+      summary: Cria um pedido
+      description: O id, o status (CRIADO) e a data de criação são gerados pela API.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoRequest'
+            example:
+              cliente: Maria Silva
+              descricao: 2 camisetas pretas tamanho M
+              valor: 159.90
+      responses:
+        '201':
+          description: Pedido criado
+          headers:
+            Location:
+              description: URI do pedido criado
+              schema:
+                type: string
+              example: /pedidos/7d3f0a2e-5c1b-4f7e-9a61-2b8c4e0d9f13
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              example:
+                id: 7d3f0a2e-5c1b-4f7e-9a61-2b8c4e0d9f13
+                cliente: Maria Silva
+                descricao: 2 camisetas pretas tamanho M
+                valor: 159.90
+                status: CRIADO
+                dataCriacao: '2026-10-21T20:15:42.318'
+        '400':
+          description: Dados inválidos (campo vazio, valor menor ou igual a zero ou JSON mal formatado)
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+              example:
+                status: 400
+                erro: Bad Request
+                mensagem: valor deve ser maior que zero
+                requestId: 0b6f8a51-3e2d-4d0c-8f7a-91c2d5e4a7b0
+                timestamp: '2026-10-21T20:16:05.102'
+
+  /pedidos/{id}:
+    get:
+      tags: [Pedidos]
+      summary: Consulta um pedido pelo id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id do pedido retornado na criação
+          schema:
+            type: string
+          example: 7d3f0a2e-5c1b-4f7e-9a61-2b8c4e0d9f13
+      responses:
+        '200':
+          description: Pedido encontrado
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              example:
+                id: 7d3f0a2e-5c1b-4f7e-9a61-2b8c4e0d9f13
+                cliente: Maria Silva
+                descricao: 2 camisetas pretas tamanho M
+                valor: 159.90
+                status: CRIADO
+                dataCriacao: '2026-10-21T20:15:42.318'
+        '404':
+          description: Pedido não encontrado
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+              example:
+                status: 404
+                erro: Not Found
+                mensagem: Pedido 123 não encontrado
+                requestId: c41e9b07-6a2f-4b8d-a3c5-7e0f1d2b9a64
+                timestamp: '2026-10-21T20:17:11.540'
+
+components:
+  headers:
+    XRequestId:
+      description: Id da requisição (o mesmo usado nos logs)
+      schema:
+        type: string
+
+  schemas:
+    PedidoRequest:
+      type: object
+      required: [cliente, descricao, valor]
+      properties:
+        cliente:
+          type: string
+          description: Nome do cliente
+        descricao:
+          type: string
+          description: Descrição do pedido
+        valor:
+          type: number
+          description: Valor do pedido, deve ser maior que zero
+          minimum: 0
+          exclusiveMinimum: true
+
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: string
+          description: UUID gerado pela API
+        cliente:
+          type: string
+        descricao:
+          type: string
+        valor:
+          type: number
+        status:
+          type: string
+          enum: [CRIADO]
+        dataCriacao:
+          type: string
+          format: date-time
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        erro:
+          type: string
+        mensagem:
+          type: string
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
